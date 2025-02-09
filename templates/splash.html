@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+        }
+
+        /* Splash Container */
+        .splash-container {
+            text-align: center;
+        }
+
+        img {
+            width: 80%;
+            height: auto; /* Keeps aspect ratio intact */
+        }
+    </style>
+    <script>
+        // Redirect to login after 1 second
+        setTimeout(() => window.location.href = "/login", 1000);
+    </script>
+</head>
+<body>
+
+    <!-- Splash Content -->
+    <div class="splash-container">
+        <img src="{{ url_for('static', filename='test1.webp') }}" alt="Welcome Image">
+    </div>
+
+</body>
+</html>
