@@ -101,5 +101,7 @@ weasel==0.4.1
 websockets==14.2
 wheel==0.43.0
 WTForms==3.2.1
+waitress==3.0.2
+
 
 
