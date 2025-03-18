@@ -77,7 +77,6 @@ PyQt5==5.15.10
 PyQtWebEngine==5.15.6
 Pyrebase4==4.8.0
 python-jwt==4.1.0
-pywin32==305.1
 requests-toolbelt==0.10.1
 rsa==4.9
 scikit-image==0.24.0
