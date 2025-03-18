@@ -6,7 +6,7 @@ atomicwrites==1.4.0
 blis==0.7.11
 CacheControl==0.14.2
 catalogue==2.0.10
-catboost @ https://pypi.org/packages/cp312/c/catboost/catboost-1.2.3-cp312-cp312-win_amd64.whl#sha256=031c4a4e7160b6a965414dd60c9459fb8472c69a8156e80e16734dd0b068986e
+catboost==1.2.3
 cloudpathlib==0.18.1
 confection==0.1.5
 cymem==2.0.8
