@@ -50,7 +50,7 @@ lazy_loader==0.4
 libclang==18.1.1
 marisa-trie==1.2.0
 mkl==2021.4.0
-mkl-service==2.4.0
+mkl-service==2.4.2
 ml-dtypes==0.4.0
 murmurhash==1.0.10
 namex==0.0.8
