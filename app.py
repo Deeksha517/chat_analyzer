@@ -2,20 +2,26 @@ import os
 import re
 from flask import Flask, request, jsonify, redirect, url_for, session, render_template
 from flask_bcrypt import Bcrypt # type: ignore
-from flask_sqlalchemy import SQLAlchemy # type: ignore
+from flask_sqlalchemy import SQLAlchemy    # type: ignore
+from flask_migrate import Migrate  # Import Flask-Migrate    # type: ignore
 from datetime import datetime, timedelta
 
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)  # Secure session key
+app.config['SESSION_PERMANENT'] = False  # Ensure session expires
 
-# Use PostgreSQL database from Render
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://convoiq_db_user:WRUD1BvNsvoVIgokqoYc3rC2BeZrTW7F@dpg-cvco4lvnoe9s73cev5k0-a/convoiq_db")
+# Use PostgreSQL database from Render (Ensure DATABASE_URL is set in Render environment)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL is not set. Please configure it in your environment variables.")
+
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# Initialize database and bcrypt
+# Initialize database, bcrypt, and migration
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)  # Enable migrations
 bcrypt = Bcrypt(app)
 
 # Session expiration time (30 minutes)
@@ -30,12 +36,7 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)  # Store hashed passwords
 
 
-# Initialize database
-with app.app_context():
-    db.create_all()
-
-
-# Helper functions (Updated for PostgreSQL)
+# Helper functions
 def hash_password(password):
     return bcrypt.generate_password_hash(password).decode('utf-8')
 
