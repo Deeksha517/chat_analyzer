@@ -48,15 +48,15 @@
         {% if user %}
         <div class="card">
             <!-- Profile Picture with Fallback -->
-            <img src="{{ url_for('static', filename='profile_pics/' + user.get('profile_pic', 'default.jpg')) }}" 
+            <img src="{{ url_for('static', filename='profile_pics/' + user['profile_pic']) }}" 
                  alt="Profile Picture" class="profile-pic">
             
             <!-- Username -->
-            <p class="username">👤 {{ user.get('username', 'Unknown User') }}</p>
+            <p class="username">👤 {{ user['username'] }}</p>
 
             <div class="buttons">
-                <a href="{{ url_for('chat', username=user.get('username')) }}" class="chat-btn">💬 Chat Now</a>
-                <a href="{{ url_for('view_profile', username=user.get('username')) }}" class="profile-btn">👀 View Profile</a>
+                <a href="{{ url_for('chat', username=user['username']) }}" class="chat-btn">💬 Chat Now</a>
+                <a href="{{ url_for('view_profile', username=user['username']) }}" class="profile-btn">👀 View Profile</a>
             </div>
         </div>
         {% else %}
