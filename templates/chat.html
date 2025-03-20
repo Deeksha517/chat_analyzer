@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    <script>
+        var socket = io();
+
+        function sendMessage() {
+            var receiver = document.getElementById("receiver").value;
+            var message = document.getElementById("message").value;
+
+            fetch('/send_message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ receiver: receiver, message: message })
+            }).then(response => response.json()).then(data => {
+                if (data.success) {
+                    document.getElementById("message").value = "";
+                } else {
+                    alert("Error: " + data.error);
+                }
+            });
+        }
+
+        // Listen for new messages in real-time
+        socket.on('new_message', function(data) {
+            var chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML += `<p><strong>${data.sender}:</strong> ${data.message}</p>`;
+        });
+
+        // Load previous chat messages
+        function loadChat() {
+            var receiver = document.getElementById("receiver").value;
+
+            fetch(`/get_chat/${receiver}`)
+                .then(response => response.json())
+                .then(messages => {
+                    var chatBox = document.getElementById("chat-box");
+                    chatBox.innerHTML = "";
+                    messages.forEach(msg => {
+                        chatBox.innerHTML += `<p><strong>${msg.sender}:</strong> ${msg.message} <small>${msg.timestamp}</small></p>`;
+                    });
+                });
+        }
+    </script>
+</head>
+<body>
+    <h2>Chat</h2>
+    <input type="text" id="receiver" placeholder="Enter username to chat with">
+    <button onclick="loadChat()">Load Chat</button>
+
+    <div id="chat-box" style="border:1px solid #ccc; height: 300px; overflow-y: scroll;"></div>
+
+    <input type="text" id="message" placeholder="Type a message">
+    <button onclick="sendMessage()">Send</button>
+</body>
+</html>

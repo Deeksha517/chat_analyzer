@@ -1,61 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Friends</title>
+    <title>Browse Users</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; }
-        .search-container { margin: 20px; }
+        .container { margin-top: 20px; }
+        .search-container { margin-bottom: 20px; position: relative; display: inline-block; }
         .search-box {
             padding: 10px;
-            width: 60%;
-            max-width: 400px;
+            width: 250px;
             font-size: 16px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-        .card-container { display: flex; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
+        .search-history {
+            display: none;
+            position: absolute;
+            top: 40px;
+            left: 0;
+            width: 100%;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            max-height: 150px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        .search-history p {
+            margin: 0;
+            padding: 8px;
+            cursor: pointer;
+        }
+        .search-history p:hover { background: #f0f0f0; }
         .card {
-            width: 250px;
-            height: 100px;
-            margin: 15px;
+            width: 300px;
+            margin: 20px auto;
             padding: 15px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: bold;
             background: white;
-            cursor: pointer;
-            transition: 0.3s;
+            text-align: center;
         }
-        .card:hover { background: #f0f0f0; transform: scale(1.05); }
-        .message { color: gray; font-size: 16px; margin-top: 20px; }
+        .profile-pic {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+        .username { font-size: 20px; font-weight: bold; }
+        .buttons { margin-top: 15px; }
+        .buttons a {
+            display: inline-block;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .chat-btn { background: #28a745; color: white; }
+        .profile-btn { background: #17a2b8; color: white; }
+        .nav-btn { background: #f0ad4e; color: white; }
+        .dashboard-btn { background: #007bff; color: white; }
     </style>
 </head>
 <body>
-    <h2>Search Friends</h2>
-    <form action="/search_friends" method="POST">
-        <input type="text" name="query" placeholder="Search username">
+
+    <h2>Browse Users</h2>
+
+    <!-- 🔍 Search Bar with History -->
+    <form action="{{ url_for('search_friends') }}" method="POST">
+        <div class="search-container">
+            <input type="text" name="query" class="search-box" placeholder="Search username" value="{{ last_search }}" 
+                   onfocus="showHistory()" oninput="showHistory()">
+            <div class="search-history" id="search-history">
+                {% for past_search in search_history %}
+                    <p onclick="selectSearch('{{ past_search }}')">{{ past_search }}</p>
+                {% endfor %}
+            </div>
+        </div>
         <button type="submit">🔍 Search</button>
     </form>
-    
 
-    <div class="card-container">
-        {% if users %}
-            {% for user in users %}
-                <div class="card" onclick="location.href='/profile/{{ user }}'">
-                    👤 {{ user }}
-                </div>
-            {% endfor %}
-        {% elif query %}
-            <p class="message">No users found.</p>
+    <div class="container">
+        {% if user %}
+        <div class="card">
+            <!-- Profile Picture with Fallback -->
+            <img src="{{ url_for('static', filename='profile_pics/' + (user['profile_pic'] if user['profile_pic'] else 'default.jpg')) }}" 
+                 alt="Profile Picture" class="profile-pic">
+            
+            <!-- Username -->
+            <p class="username">👤 {{ user['username'] }}</p>
+
+            <div class="buttons">
+                <a href="{{ url_for('chat', username=user['username']) }}" class="chat-btn">💬 Chat Now</a>
+                <a href="{{ url_for('view_profile', username=user['username']) }}" class="profile-btn">👀 View Profile</a>
+            </div>
+        </div>
+
+        <!-- Navigation buttons -->
+        <div class="buttons">
+            {% if session['current_index'] > 0 %}
+                <a href="{{ url_for('prev_user') }}" class="nav-btn">⬅️ Previous</a>
+            {% endif %}
+            {% if session['current_index'] < session['search_results']|length - 1 %}
+                <a href="{{ url_for('next_user') }}" class="nav-btn">Next ➡️</a>
+            {% endif %}
+        </div>
+        
+        {% elif last_search %}
+            <p>No users found for "{{ last_search }}".</p>
         {% endif %}
     </div>
 
-    <button onclick="location.href='/dashboard'">⬅️ Back to Dashboard</button>
+    <!-- 🏠 Back to Dashboard -->
+    <a href="{{ url_for('dashboard') }}" class="dashboard-btn" onclick="clearSearch()">🏠 Back to Dashboard</a>
+
+    <script>
+        function showHistory() {
+            let history = document.getElementById("search-history");
+            if (history.children.length > 0) {
+                history.style.display = "block";
+            }
+        }
+
+        function hideHistory() {
+            setTimeout(() => {
+                document.getElementById("search-history").style.display = "none";
+            }, 200);
+        }
+
+        function selectSearch(value) {
+            document.querySelector(".search-box").value = value;
+            hideHistory();
+        }
+
+        function clearSearch() {
+            sessionStorage.removeItem("lastSearch");
+            document.querySelector(".search-box").value = "";
+        }
+
+        document.addEventListener("click", function(event) {
+            let searchContainer = document.querySelector(".search-container");
+            let searchHistory = document.getElementById("search-history");
+            if (!searchContainer.contains(event.target)) {
+                searchHistory.style.display = "none";
+            }
+        });
+    </script>
+
 </body>
 </html>

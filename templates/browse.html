@@ -1,59 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Browse Users</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; }
+        .container { margin-top: 20px; }
         .card {
             width: 300px;
-            height: 150px;
-            margin: 50px auto;
-            padding: 20px;
+            margin: 20px auto;
+            padding: 15px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
             background: white;
+            text-align: center;
+        }
+        .profile-pic {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
         }
         .username { font-size: 20px; font-weight: bold; }
-        .buttons { margin-top: 20px; }
-        button {
-            margin: 5px;
+        .buttons { margin-top: 15px; }
+        .buttons a {
+            display: inline-block;
             padding: 10px 15px;
-            border: none;
+            margin: 5px;
             border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
         }
-        .chat { background: #4CAF50; color: white; }
-        .profile { background: #008CBA; color: white; }
-        .nav { background: gray; color: white; }
+        .chat-btn { background: #28a745; color: white; }
+        .profile-btn { background: #17a2b8; color: white; }
+        .nav-btn { background: #f0ad4e; color: white; }
+        .dashboard-btn { background: #007bff; color: white; }
     </style>
 </head>
 <body>
+
     <h2>Browse Users</h2>
-    
-    <div class="card">
-        <div class="username">👤 {{ user }}</div>
-        <div class="buttons">
-            <button class="chat" onclick="location.href='/chat/{{ user }}'">💬 Chat Now</button>
-            <button class="profile" onclick="location.href='/profile/{{ user }}'">👀 View Profile</button>
+
+    <!-- 🔍 Search Again - Always Visible -->
+    <a href="{{ url_for('search_friends') }}" class="nav-btn">🔍 Search Again</a>
+
+    <div class="container">
+        {% if user %}
+        <div class="card">
+            <!-- Profile Picture with Fallback -->
+            <img src="{{ url_for('static', filename='profile_pics/' + user.get('profile_pic', 'default.jpg')) }}" 
+                 alt="Profile Picture" class="profile-pic">
+            
+            <!-- Username -->
+            <p class="username">👤 {{ user.get('username', 'Unknown User') }}</p>
+
+            <div class="buttons">
+                <a href="{{ url_for('chat', username=user.get('username')) }}" class="chat-btn">💬 Chat Now</a>
+                <a href="{{ url_for('view_profile', username=user.get('username')) }}" class="profile-btn">👀 View Profile</a>
+            </div>
         </div>
+        {% else %}
+            <p>No users found.</p>
+        {% endif %}
+
+        <!-- Navigation buttons -->
+        {% set search_results = session.get('search_results', []) %}
+        {% set current_index = session.get('current_index', 0) %}
+
+        {% if search_results|length > 1 %}
+            <div class="buttons">
+                {% if current_index > 0 %}
+                    <a href="{{ url_for('prev_user') }}" class="nav-btn">⬅️ Previous</a>
+                {% endif %}
+                
+                {% if current_index < search_results|length - 1 %}
+                    <a href="{{ url_for('next_user') }}" class="nav-btn">Next ➡️</a>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <!-- 🏠 Back to Dashboard -->
+        <a href="{{ url_for('dashboard') }}" class="dashboard-btn">🏠 Back to Dashboard</a>
     </div>
 
-    <div>
-        {% if index > 0 %}
-            <button class="nav" onclick="location.href='/prev_user'">⬅️ Previous</button>
-        {% endif %}
-        
-        {% if index < total - 1 %}
-            <button class="nav" onclick="location.href='/next_user'">Next ➡️</button>
-        {% endif %}
-    </div>
-
-    <button onclick="location.href='/dashboard'">🏠 Back to Dashboard</button>
 </body>
 </html>
