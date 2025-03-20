@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ user['username'] }}'s Profile</title>
+</head>
+<body>
+    <h2>{{ user['username'] }}</h2>
+    <img src="{{ url_for('static', filename='profile_pics/' + user['profile_pic']) }}" alt="Profile Picture" width="150">
+    <p><strong>Bio:</strong> {{ user['bio'] }}</p>
+    <p><strong>Interests:</strong> {{ user['interests'] }}</p>
+
+    {% if is_owner %}
+        <a href="{{ url_for('edit_profile') }}">Edit Profile</a>
+        <a href="{{ url_for('chat', username=user['username']) }}">Chat with Yourself</a>
+    {% else %}
+        <a href="{{ url_for('chat', username=user['username']) }}">Message</a>
+    {% endif %}
+</body>
+</html>

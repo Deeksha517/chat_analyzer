@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Users</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .card {
+            width: 300px;
+            height: 150px;
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: white;
+        }
+        .username { font-size: 20px; font-weight: bold; }
+        .buttons { margin-top: 20px; }
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .chat { background: #4CAF50; color: white; }
+        .profile { background: #008CBA; color: white; }
+        .nav { background: gray; color: white; }
+    </style>
+</head>
+<body>
+    <h2>Browse Users</h2>
+    
+    <div class="card">
+        <div class="username">👤 {{ user }}</div>
+        <div class="buttons">
+            <button class="chat" onclick="location.href='/chat/{{ user }}'">💬 Chat Now</button>
+            <button class="profile" onclick="location.href='/profile/{{ user }}'">👀 View Profile</button>
+        </div>
+    </div>
+
+    <div>
+        {% if index > 0 %}
+            <button class="nav" onclick="location.href='/prev_user'">⬅️ Previous</button>
+        {% endif %}
+        
+        {% if index < total - 1 %}
+            <button class="nav" onclick="location.href='/next_user'">Next ➡️</button>
+        {% endif %}
+    </div>
+
+    <button onclick="location.href='/dashboard'">🏠 Back to Dashboard</button>
+</body>
+</html>

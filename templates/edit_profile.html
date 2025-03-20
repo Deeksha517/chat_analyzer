@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Edit Profile</title>
+</head>
+<body>
+    <h2>Edit Profile</h2>
+    <form method="POST" enctype="multipart/form-data">
+        <label>Bio:</label><br>
+        <textarea name="bio" required>{{ user.bio }}</textarea><br>
+
+        <label>Interests:</label><br>
+        <input type="text" name="interests" value="{{ user.interests }}" required><br>
+
+        <label>Profile Picture:</label><br>
+        {% if user.profile_pic and user.profile_pic != "default.jpg" %}
+            <img src="{{ url_for('static', filename='profile_pics/' + user.profile_pic) }}" width="100"><br>
+            <input type="checkbox" name="remove_pic"> Remove Photo<br>
+        {% endif %}
+        <input type="file" name="profile_pic"><br>
+
+        <button type="submit">Save Changes</button>
+    </form>
+</body>
+</html>
