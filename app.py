@@ -75,6 +75,20 @@ def update_session_activity():
 def home():
     return render_template('splash.html')
 
+@app.route('/dashboard')
+def dashboard():
+    if 'username' not in session or is_session_expired():
+        session.pop('username', None)  # Log out user if session expired
+        return redirect(url_for('login'))
+    
+    # Clear search results when returning to the dashboard
+    session.pop('search_results', None)
+    session.pop('current_index', None)
+
+    update_session_activity()
+    return render_template('dashboard.html', username=session['username'])
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -193,48 +207,44 @@ def edit_profile():
         "profile_pic": user[2]
     })
 
-
-
-@app.route('/dashboard')
-def dashboard():
-    if 'username' not in session or is_session_expired():
-        session.pop('username', None)  # Log out user if session expired
-        return redirect(url_for('login'))
-    
-    # Clear search results when returning to the dashboard
-    session.pop('search_results', None)
-    session.pop('current_index', None)
-
-    update_session_activity()
-    return render_template('dashboard.html', username=session['username'])
-
-
-
-
 @app.route('/search_friends', methods=['GET', 'POST'])
 def search_friends():
-    if 'username' not in session or is_session_expired():
-        session.pop('username', None)
-        return redirect(url_for('login'))
-    update_session_activity()
+    session.setdefault('search_history', [])  # Ensure search history exists
 
-    if request.method == 'POST':  # When user submits search form
-        query = request.form.get('query', '').strip().lower()
-        if query:
-            with get_db_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT username FROM users WHERE LOWER(username) LIKE ? AND username != ?", 
-                               ('%' + query + '%', session['username']))
-                users = [user[0] for user in cursor.fetchall()]  
-            session['search_results'] = users
-            session['current_index'] = 0  # Start at first result
+    last_search = ""
+    users = []
 
-    if 'search_results' not in session or not isinstance(session['search_results'], list):
-        return render_template('search.html', message="No users found.")
-    
-    return redirect(url_for('browse_results'))
+    # 🚀 Clear search results ONLY if coming from Dashboard (fresh GET request without results)
+    if request.method == 'GET' and 'clear_results' in session:
+        session.pop('search_results', None)
+        session.pop('current_index', None)
+        session.pop('clear_results', None)  # Remove flag after clearing
+        session.modified = True  # Ensure session updates
 
+    if request.method == 'POST':
+        query = request.form.get('query', "").strip()
+        last_search = query
 
+        if query and query not in session['search_history']:
+            session['search_history'].insert(0, query)
+            session['search_history'] = session['search_history'][:5]  # Keep last 5 searches
+            session.modified = True  # Mark session as modified
+
+        with get_db() as conn:
+            conn.row_factory = sqlite3.Row  # Enable dictionary-like access
+            cursor = conn.cursor()
+            cursor.execute("SELECT username, bio, profile_pic FROM users WHERE LOWER(username) LIKE LOWER(?) LIMIT 10", (f"%{query}%",))
+            result = cursor.fetchall()
+            users = [dict(row) for row in result]  # Convert rows to dictionaries
+
+        session['search_results'] = users  # Store search results
+        session['current_index'] = 0  # Reset index
+        session.modified = True  # Mark session as modified
+
+    users = session.get('search_results', [])  # Retrieve safely
+    user = users[session.get('current_index', 0)] if users else None  # Avoid errors
+
+    return render_template('search.html', user=user, last_search=last_search, search_history=session['search_history'])
 
 
 @app.route('/browse_results', methods=['GET'])
@@ -256,7 +266,7 @@ def browse_results():
     # Fetch additional user details (bio, profile_pic, interests) from the database
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT username, bio, profile_pic, interests FROM users WHERE username = ?", (selected_user,))
+        cursor.execute("SELECT username, bio, profile_pic, interests FROM users WHERE username = ?", (selected_user['username'],))
         user_data = cursor.fetchone()
 
     if not user_data:
@@ -274,17 +284,22 @@ def browse_results():
     return render_template('browse.html', user=user, index=index, total=len(search_results))
 
 
+
 @app.route('/next_user')
 def next_user():
     if 'search_results' in session and session['current_index'] < len(session['search_results']) - 1:
         session['current_index'] += 1
-    return redirect(url_for('browse_results'))
+        # Automatically use session info for the redirection
+        return redirect(url_for('browse_results'))
 
 @app.route('/prev_user')
 def prev_user():
     if 'search_results' in session and session['current_index'] > 0:
         session['current_index'] -= 1
-    return redirect(url_for('browse_results'))
+        # Automatically use session info for the redirection
+        return redirect(url_for('browse_results'))
+
+
 
 
 

@@ -35,14 +35,57 @@
         .profile-btn { background: #17a2b8; color: white; }
         .nav-btn { background: #f0ad4e; color: white; }
         .dashboard-btn { background: #007bff; color: white; }
+
+        /* Style for the search bar and button */
+        form {
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 200px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        /* Consistent styling for the Search button */
+        button {
+            padding: 10px 15px;
+            background: #007bff; /* Blue background */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 120px; /* Consistent width */
+            margin-left: 10px;
+            display: inline-block; /* To keep the button in line with the input */
+        }
+
+        button:hover {
+            background: #007bff; /* Maintain same color on hover */
+        }
+
+        /* Prevent any changes from affecting the button */
+        .search-btn-container {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
 
     <h2>Browse Users</h2>
 
-    <!-- 🔍 Search Again - Always Visible -->
-    <a href="{{ url_for('search_friends') }}" class="nav-btn">🔍 Search Again</a>
+    <!-- Search Bar - Always Visible -->
+    <div class="search-btn-container">
+        <form action="{{ url_for('search_friends') }}" method="GET">
+            <input type="text" name="query" placeholder="Search username" value="{{ last_search }}" required>
+            <button type="submit">🔍 Search</button>
+        </form>
+    </div>
 
     <div class="container">
         {% if user %}
