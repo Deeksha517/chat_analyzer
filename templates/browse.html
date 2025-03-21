@@ -36,7 +36,7 @@
         .nav-btn { background: #f0ad4e; color: white; }
         .dashboard-btn { background: #007bff; color: white; }
 
-        /* Style for the search bar and button */
+        /* Search Bar */
         form {
             display: inline-block;
             margin-bottom: 20px;
@@ -49,52 +49,39 @@
             font-size: 16px;
         }
 
-        /* Consistent styling for the Search button */
-        button {
+        /* Always Same Search Button */
+        .search-btn {
             padding: 10px 15px;
-            background: #007bff; /* Blue background */
+            background: #007bff; /* Blue */
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
-            width: 120px; /* Consistent width */
+            width: 120px;
             margin-left: 10px;
-            display: inline-block; /* To keep the button in line with the input */
+            display: inline-block;
         }
 
-        button:hover {
-            background: #007bff; /* Maintain same color on hover */
-        }
-
-        /* Prevent any changes from affecting the button */
-        .search-btn-container {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
     </style>
 </head>
 <body>
 
     <h2>Browse Users</h2>
 
-    <!-- Search Bar - Always Visible -->
+    <!-- Search Bar -->
     <div class="search-btn-container">
         <form action="{{ url_for('search_friends') }}" method="GET">
             <input type="text" name="query" placeholder="Search username" value="{{ last_search }}" required>
-            <button type="submit">🔍 Search</button>
+            <button type="submit" class="search-btn">🔍 Search</button>
         </form>
     </div>
 
     <div class="container">
         {% if user %}
         <div class="card">
-            <!-- Profile Picture with Fallback -->
             <img src="{{ url_for('static', filename='profile_pics/' + user['profile_pic']) }}" 
                  alt="Profile Picture" class="profile-pic">
-            
-            <!-- Username -->
             <p class="username">👤 {{ user['username'] }}</p>
 
             <div class="buttons">
@@ -106,7 +93,6 @@
             <p>No users found.</p>
         {% endif %}
 
-        <!-- Navigation buttons -->
         {% set search_results = session.get('search_results', []) %}
         {% set current_index = session.get('current_index', 0) %}
 
@@ -122,8 +108,8 @@
             </div>
         {% endif %}
 
-        <!-- 🏠 Back to Dashboard -->
         <a href="{{ url_for('dashboard') }}" class="dashboard-btn">🏠 Back to Dashboard</a>
+
     </div>
 
 </body>
