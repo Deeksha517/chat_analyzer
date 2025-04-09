@@ -300,10 +300,6 @@ def prev_user():
         return redirect(url_for('browse_results'))
 
 
-
-
-
-
 @app.route('/profile/<username>')
 def view_profile(username):
     conn = get_db()

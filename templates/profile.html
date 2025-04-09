@@ -2,29 +2,95 @@
 <html lang="en">
 <head>
     <title>{{ user.username }}'s Profile</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .profile-card {
+            background-color: #111;
+            padding: 30px;
+            border-radius: 20px;
+            width: 350px;
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .profile-pic {
+            width: 160px;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 20px; /* 👈 Rounded square */
+            border: 3px solid #333;
+            margin-bottom: 20px;
+        }
+
+        .profile-card h2 {
+            margin-bottom: 10px;
+        }
+
+        .profile-card p {
+            margin: 10px 0;
+        }
+
+        .button {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background 0.3s;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        .button.green {
+            background-color: #28a745;
+        }
+
+        .button.green:hover {
+            background-color: #1e7e34;
+        }
+
+        .button.red {
+            background-color: #dc3545;
+        }
+
+        .button.red:hover {
+            background-color: #a71d2a;
+        }
+    </style>
 </head>
 <body>
-    <h2>{{ user.username }}</h2>
-    <img src="{{ url_for('static', filename='profile_pics/' + user.profile_pic) }}" alt="Profile Picture" width="150">
-    <p><strong>Bio:</strong> {{ user.bio }}</p>
-    <p><strong>Interests:</strong> {{ user.interests }}</p>
+    <div class="profile-card">
+        <img src="{{ url_for('static', filename='profile_pics/' + user.profile_pic) }}" alt="Profile Picture" class="profile-pic">
+        <h2>{{ user.username }}</h2>
+        <p><strong>Bio:</strong> {{ user.bio }}</p>
+        <p><strong>Interests:</strong> {{ user.interests }}</p>
 
-    {% if session['username'] == user.username %}
-        <a href="{{ url_for('edit_profile') }}">Edit Profile</a>
-        <a href="{{ url_for('chat', username=user.username) }}">Chat with Yourself</a>
-
-        <!-- Back to Dashboard -->
-        <br><br>
-        <a href="{{ url_for('dashboard') }}" style="padding: 10px 15px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">⬅ Back to Dashboard</a>
-
-    {% else %}
-        <a href="{{ url_for('chat', username=user.username) }}">Message</a>
-
-        <!-- Back to Search (Only if navigated from search) -->
-        <br><br>
-        {% if 'search_results' in session %}
-            <a href="{{ url_for('browse_results') }}" style="padding: 10px 15px; background: #28a745; color: white; text-decoration: none; border-radius: 5px;">⬅ Back to Search</a>
+        {% if session['username'] == user.username %}
+            <a href="{{ url_for('edit_profile') }}" class="button">✏️ Edit Profile</a>
+            <a href="{{ url_for('chat', username=user.username) }}" class="button red">💬 Chat with Yourself</a>
+            <br><br>
+            <a href="{{ url_for('dashboard') }}" class="button">⬅ Back to Dashboard</a>
+        {% else %}
+            <a href="{{ url_for('chat', username=user.username) }}" class="button red">💬 Message</a>
+            <br><br>
+            {% if 'search_results' in session %}
+                <a href="{{ url_for('browse_results') }}" class="button green">⬅ Back to Search</a>
+            {% endif %}
         {% endif %}
-    {% endif %}
+    </div>
 </body>
 </html>

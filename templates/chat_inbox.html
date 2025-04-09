@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Chat Inbox</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .chat-container { margin: 20px auto; width: 80%; }
+        .chat-card {
+            width: 300px;
+            margin: 10px auto;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            background: white;
+            text-align: left;ss
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .profile-pic {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 10px;
+        }
+        .chat-info {
+            flex-grow: 1;
+        }
+        .chat-info p { margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+<h2>Chat Inbox</h2>
+
+<div class="chat-container">
+    {% for chat in chats %}
+    <div class="chat-card" onclick="window.location.href='{{ url_for('chat', receiver=chat.username) }}'">
+        <img src="{{ url_for('static', filename='profile_pics/' + (chat.profile_pic if chat.profile_pic else 'default.jpg')) }}" class="profile-pic">
+        <div class="chat-info">
+            <p><strong>{{ chat.username }}</strong></p>
+            <p>{{ chat.last_message if chat.last_message else "No messages yet" }}</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+</body>
+</html>
