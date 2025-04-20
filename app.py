@@ -5,10 +5,11 @@ import hashlib
 from flask import Flask, request, jsonify, redirect, url_for, session, render_template
 from flask_bcrypt import Bcrypt # type: ignore
 from datetime import datetime, timedelta
+from flask_socketio import SocketIO, join_room, emit
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)  # Secure session key
+app.config['SECRET_KEY'] = 'dev-secret-key-please-change'
 
 # Session expiration time (30 minutes)
 SESSION_TIMEOUT = timedelta(minutes=30)
@@ -16,9 +17,14 @@ SESSION_TIMEOUT = timedelta(minutes=30)
 # Initialize bcrypt for password hashing
 bcrypt = Bcrypt(app)
 
+socketio = SocketIO(app)
+
 # Database connection helper
 def get_db_connection():
-    return sqlite3.connect('users.db')
+    conn = sqlite3.connect('users.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
 
 # Password hashing using bcrypt
 def hash_password(password):
@@ -88,6 +94,18 @@ def dashboard():
     update_session_activity()
     return render_template('dashboard.html', username=session['username'])
 
+@app.before_request
+def refresh_session_timeout():
+    # Skip public/auth routes
+    if request.endpoint in ('login', 'register', 'edit_profile', 'logout'):
+        return
+
+    if 'username' in session:
+        if is_session_expired():
+            session.clear()
+            return redirect(url_for('login'))
+        update_session_activity()
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -96,11 +114,11 @@ def register():
         password = request.form['password']
 
         if user_exists(username):
-            return render_template('register.html', error="Username already exists", password_error=None)
+            return render_template('register.html',
+                                   error="Username already exists",
+                                   password_error=None)
 
-        # Hash password before saving
         hashed_password = hash_password(password)
-
         conn = get_db()
         cursor = conn.cursor()
 
@@ -111,17 +129,22 @@ def register():
             """, (username, hashed_password))
             conn.commit()
 
-            session['username'] = username  # Store session with correct key
-            return redirect('/edit_profile')  # Redirect new users to profile setup
+            # 1) Store session
+            session['username'] = username
+            # 2) Reset last-activity timestamp
+            update_session_activity()
+
+            # 3) Redirect new users to profile setup
+            return redirect('/edit_profile')
 
         except sqlite3.IntegrityError:
-            return render_template('register.html', error="Username already exists", password_error=None)
-
+            return render_template('register.html',
+                                   error="Username already exists",
+                                   password_error=None)
         finally:
             conn.close()
 
     return render_template('register.html')
-
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -137,14 +160,19 @@ def login():
         conn.close()
 
         if user and bcrypt.check_password_hash(user['password'], password):
-            session['username'] = username  # Store session with correct key
+            # 1) Store session
+            session['username'] = username
+            # 2) Reset last-activity timestamp
+            update_session_activity()
 
-            # Check if the profile is incomplete
-            if user['bio'] == "Hey there! I am using Chat Analyzer." and not user['interests']:
-                return redirect('/edit_profile')  # Redirect first-time users to profile setup
-            
-            return redirect('/dashboard')  # Redirect returning users to the dashboard
-        
+            # 3) First-time users to profile setup
+            if (user['bio'] == "Hey there! I am using Chat Analyzer."
+                    and not user['interests']):
+                return redirect('/edit_profile')
+
+            # 4) Returning users to dashboard
+            return redirect('/dashboard')
+
         return render_template('login.html', error="Invalid username or password")
 
     return render_template('login.html')
@@ -316,20 +344,109 @@ def view_profile(username):
                            is_owner=(session.get('username') == username))  # Pass ownership flag
 
 
-@app.route('/chat/<username>')
+
+
+@app.route('/chat/<username>', methods=['GET'])
 def chat(username):
-    if 'username' not in session or is_session_expired():
+    # Check if the user is logged in, otherwise redirect to login
+    if 'username' not in session:
         session.pop('username', None)
         return redirect(url_for('login'))
-    update_session_activity()
+    
+    sender = session['username']
+    receiver = username
 
-    return render_template('chat.html', username=username)
+    # Fetch messages between sender and receiver from the database
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''SELECT sender, receiver, message, timestamp
+                          FROM messages
+                          WHERE (sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)
+                          ORDER BY timestamp ASC''', (sender, receiver, receiver, sender))
+        messages = cursor.fetchall()
+
+    # Render the chat page with the messages
+    return render_template('chat.html', username=username, messages=messages)
+
+# Route to fetch chat history for a specific conversation
+@app.route('/get_chat/<receiver>', methods=['GET'])
+def get_chat(receiver):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    sender = session['username']
+    
+    # Fetch messages between sender and receiver
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''SELECT sender, receiver, message, timestamp
+                          FROM messages
+                          WHERE (sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)
+                          ORDER BY timestamp ASC''', (sender, receiver, receiver, sender))
+        messages = cursor.fetchall()
+    
+    # Convert query results to a list of dictionaries for JSON response
+    chat_history = [{
+        'sender': msg['sender'],
+        'receiver': msg['receiver'],
+        'message': msg['message'],
+        'timestamp': msg['timestamp']
+    } for msg in messages]
+
+    return jsonify(chat_history)
+
+# Save message to the database
+def save_message(sender, receiver, message, timestamp=None):
+    if not timestamp:
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO messages (sender, receiver, message, timestamp)
+            VALUES (?, ?, ?, ?)
+        """, (sender, receiver, message, timestamp))
+        conn.commit()
+
+# Handle real-time chat using SocketIO
+@socketio.on('join_room')
+def on_join(data):
+    username = data['username']
+    receiver = data['receiver']
+    room = '_'.join(sorted([username, receiver]))  # Unique room name for each pair
+    join_room(room)
+    print(f"{username} joined room {room}")
+
+@socketio.on('send_message')
+def handle_send_message(data):
+    try:
+        sender = data['sender']
+        receiver = data['receiver']
+        message = data['message']
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Corrected line
+        
+        room = '_'.join(sorted([sender, receiver]))  # Room name ensures consistent pairing
+        save_message(sender, receiver, message, timestamp)  # Save to DB
+        
+        # Emit the message to the room
+        emit('receive_message', {
+            'sender': sender,
+            'receiver': receiver,
+            'message': message,
+            'timestamp': timestamp
+        }, room=room)
+    except Exception as e:
+        print(f"Error sending message: {e}")
+        emit('error', {'message': 'Failed to send message. Please try again later.'})
+
+
 
 
 @app.route('/logout')
 def logout():
     session.pop('username', None)
-    return redirect(url_for('home'))
+    return redirect(url_for('login'))  # Redirect to login after logout
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True)
+

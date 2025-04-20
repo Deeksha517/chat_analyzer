@@ -4,29 +4,48 @@
     <title>Chat</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
     <script>
-        var socket = io();
+        var socket = io();  // Initialize Socket.IO client
 
+        // On page load: join the room and then load history
+        window.onload = function() {
+            const sender   = "{{ session['username'] }}";
+            const receiver = document.getElementById("receiver").value;
+
+            // Tell the server we want to join this private room
+            socket.emit('join_room', { username: sender, receiver: receiver });
+
+            // Now fetch and render chat history
+            loadChat();
+        };
+
+        // Function to send the message
         function sendMessage() {
             var receiver = document.getElementById("receiver").value;
             var message = document.getElementById("message").value;
 
-            fetch('/send_message', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ receiver: receiver, message: message })
-            }).then(response => response.json()).then(data => {
-                if (data.success) {
-                    document.getElementById("message").value = "";
-                } else {
-                    alert("Error: " + data.error);
-                }
+            console.log("Sending message:", message);  // Debugging log
+
+            if (message.trim() === "") {
+                alert("Please enter a message.");
+                return;  // Don't send empty messages
+            }
+
+            // Emit the message via Socket.IO to the server
+            socket.emit('send_message', {
+                sender: '{{ session["username"] }}',
+                receiver: receiver,
+                message: message
             });
+
+            // Clear the message input field
+            document.getElementById("message").value = ""; 
         }
 
         // Listen for new messages in real-time
-        socket.on('new_message', function(data) {
+        socket.on('receive_message', function(data) {
             var chatBox = document.getElementById("chat-box");
             chatBox.innerHTML += `<p><strong>${data.sender}:</strong> ${data.message}</p>`;
+            chatBox.scrollTop = chatBox.scrollHeight;  // Scroll to the bottom
         });
 
         // Load previous chat messages
@@ -41,13 +60,19 @@
                     messages.forEach(msg => {
                         chatBox.innerHTML += `<p><strong>${msg.sender}:</strong> ${msg.message} <small>${msg.timestamp}</small></p>`;
                     });
+
+                    // Auto-scroll to the latest message
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                })
+                .catch(error => {
+                    console.error("Error loading chat:", error);
                 });
         }
     </script>
 </head>
 <body>
-    <h2>Chat</h2>
-    <input type="text" id="receiver" placeholder="Enter username to chat with">
+    <h2>Chat with <span id="recipient-name">{{ username }}</span></h2>
+    <input type="hidden" id="receiver" value="{{ username }}">
     <button onclick="loadChat()">Load Chat</button>
 
     <div id="chat-box" style="border:1px solid #ccc; height: 300px; overflow-y: scroll;"></div>
