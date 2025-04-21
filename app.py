@@ -7,6 +7,32 @@ from flask_bcrypt import Bcrypt # type: ignore
 from datetime import datetime, timedelta
 from flask_socketio import SocketIO, join_room, emit
 
+
+# 1. Near the top of app.py, define your inbox‑listing SQL
+INBOX_QUERY = """
+WITH all_msgs AS (
+  SELECT receiver AS partner, message, timestamp
+    FROM messages
+   WHERE sender   = ?
+  UNION
+  SELECT sender   AS partner, message, timestamp
+    FROM messages
+   WHERE receiver = ?
+)
+SELECT partner,
+       MAX(timestamp) AS last_time,
+       (SELECT message
+          FROM all_msgs m2
+         WHERE m2.partner = all_msgs.partner
+         ORDER BY timestamp DESC
+         LIMIT 1
+       )              AS last_message
+  FROM all_msgs
+ GROUP BY partner
+ ORDER BY last_time DESC;
+"""
+
+
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'dev-secret-key-please-change'
@@ -408,36 +434,89 @@ def save_message(sender, receiver, message, timestamp=None):
         """, (sender, receiver, message, timestamp))
         conn.commit()
 
-# Handle real-time chat using SocketIO
+
+@socketio.on('send_message')
+def handle_send_message(data):
+    sender   = data['sender']
+    receiver = data['receiver']
+    message  = data['message']
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    # 1) Save to DB
+    save_message(sender, receiver, message, timestamp)
+
+    # 2) Emit to the chat room
+    room = '_'.join(sorted([sender, receiver]))
+    emit('receive_message', {
+        'sender':    sender,
+        'receiver':  receiver,
+        'message':   message,
+        'timestamp': timestamp
+    }, room=room)
+
+    # 3) Emit to the inbox room
+    emit('new_message', {
+        'from':      sender,
+        'message':   message,
+        'timestamp': timestamp
+    }, room=f"inbox_{receiver}")
+
+        
+        
+# 2. Add this new route after your existing @app.route(…) definitions
+@app.route('/inbox')
+def inbox():
+    # a) Ensure the user is logged in
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    user = session['username']
+
+    # b) Run the SQL to get each conversation’s partner, last message & time
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(INBOX_QUERY, (user, user))
+    rows = cursor.fetchall()
+    conn.close()
+
+    # c) Normalize for the template: use keys `user`, `last_message`, `timestamp`
+    conversations = [
+        {
+            'user':         row['partner'],
+            'last_message': row['last_message'],
+            'timestamp':    row['last_time']
+        }
+        for row in rows
+    ]
+
+    return render_template('inbox.html', conversations=conversations)
+
+@socketio.on('connect')
+def on_connect():
+    user = session.get('username')
+    if user:
+        join_room(f"inbox_{user}")
+        
+        
+
 @socketio.on('join_room')
 def on_join(data):
     username = data['username']
     receiver = data['receiver']
-    room = '_'.join(sorted([username, receiver]))  # Unique room name for each pair
+    
+    if receiver is None:
+        # Handle the case where receiver is None (you can skip, return, or set a default)
+        return  # Or do something else, like using a default receiver
+    
+    # Sort the usernames (if both are valid) and create the room
+    room = '_'.join(sorted([username, receiver]))
+    
+    # Join the room
     join_room(room)
-    print(f"{username} joined room {room}")
 
-@socketio.on('send_message')
-def handle_send_message(data):
-    try:
-        sender = data['sender']
-        receiver = data['receiver']
-        message = data['message']
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Corrected line
-        
-        room = '_'.join(sorted([sender, receiver]))  # Room name ensures consistent pairing
-        save_message(sender, receiver, message, timestamp)  # Save to DB
-        
-        # Emit the message to the room
-        emit('receive_message', {
-            'sender': sender,
-            'receiver': receiver,
-            'message': message,
-            'timestamp': timestamp
-        }, room=room)
-    except Exception as e:
-        print(f"Error sending message: {e}")
-        emit('error', {'message': 'Failed to send message. Please try again later.'})
+
+
+
 
 
 
