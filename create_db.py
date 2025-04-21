@@ -20,6 +20,18 @@ def initialize_database():
                 )
             ''')
 
+            # Add new columns if not present
+            cursor.execute("PRAGMA table_info(users)")
+            existing_columns = [col[1] for col in cursor.fetchall()]
+
+            if 'gender' not in existing_columns:
+                cursor.execute("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT 'Prefer not to say'")
+                print("➕ Added 'gender' column.")
+
+            if 'age_group' not in existing_columns:
+                cursor.execute("ALTER TABLE users ADD COLUMN age_group TEXT DEFAULT 'Not specified'")
+                print("➕ Added 'age_group' column.")
+
             # Create 'messages' table if it doesn't exist
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS messages (
@@ -34,7 +46,7 @@ def initialize_database():
             ''')
 
             conn.commit()
-            print("✅ Tables created (if not already present).")
+            print("✅ Tables created or updated successfully.")
 
     except sqlite3.Error as e:
         print(f"❌ Database error: {e}")

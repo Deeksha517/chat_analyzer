@@ -4,93 +4,115 @@
     <title>{{ user.username }}'s Profile</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #000;
-            color: #fff;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
+            color: #f5f5f5;
         }
 
-        .profile-card {
-            background-color: #111;
-            padding: 30px;
-            border-radius: 20px;
-            width: 350px;
-            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+        .glass-card {
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            padding: 40px;
+            width: 400px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.4);
             text-align: center;
         }
 
         .profile-pic {
-            width: 160px;
-            height: 160px;
+            width: 140px;
+            height: 140px;
             object-fit: cover;
-            border-radius: 20px; /* 👈 Rounded square */
-            border: 3px solid #333;
+            border-radius: 50%;
+            border: 4px solid #ffffff33;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.1);
             margin-bottom: 20px;
         }
 
-        .profile-card h2 {
-            margin-bottom: 10px;
+        h2 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #fff;
         }
 
-        .profile-card p {
+        .bio, .interests {
+            font-size: 15px;
             margin: 10px 0;
+            color: #ccc;
         }
 
-        .button {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 10px 15px;
-            background-color: #007bff;
+        .label {
+            font-weight: bold;
+            color: #999;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
             color: white;
+            background: #007bff;
+            transition: 0.3s ease;
             text-decoration: none;
-            border-radius: 8px;
-            transition: background 0.3s;
         }
 
-        .button:hover {
-            background-color: #0056b3;
+        .btn:hover {
+            background: #0056b3;
         }
 
-        .button.green {
-            background-color: #28a745;
+        .btn.red {
+            background: #e63946;
         }
 
-        .button.green:hover {
-            background-color: #1e7e34;
+        .btn.red:hover {
+            background: #b0232d;
         }
 
-        .button.red {
-            background-color: #dc3545;
+        .btn.green {
+            background: #38b000;
         }
 
-        .button.red:hover {
-            background-color: #a71d2a;
+        .btn.green:hover {
+            background: #2a8f00;
         }
+
     </style>
 </head>
 <body>
-    <div class="profile-card">
+    <div class="glass-card">
         <img src="{{ url_for('static', filename='profile_pics/' + user.profile_pic) }}" alt="Profile Picture" class="profile-pic">
         <h2>{{ user.username }}</h2>
-        <p><strong>Bio:</strong> {{ user.bio }}</p>
-        <p><strong>Interests:</strong> {{ user.interests }}</p>
+        <p class="bio"><span class="label">Bio:</span> {{ user.bio }}</p>
+        <p class="interests"><span class="label">Interests:</span> {{ user.interests }}</p>
 
-        {% if session['username'] == user.username %}
-            <a href="{{ url_for('edit_profile') }}" class="button">✏️ Edit Profile</a>
-            <a href="{{ url_for('chat', username=user.username) }}" class="button red">💬 Chat with Yourself</a>
-            <br><br>
-            <a href="{{ url_for('dashboard') }}" class="button">⬅ Back to Dashboard</a>
-        {% else %}
-            <a href="{{ url_for('chat', username=user.username) }}" class="button red">💬 Message</a>
-            <br><br>
-            {% if 'search_results' in session %}
-                <a href="{{ url_for('browse_results') }}" class="button green">⬅ Back to Search</a>
+        <div class="btn-group">
+            {% if session['username'] == user.username %}
+                <a href="{{ url_for('edit_profile') }}" class="btn">✏️ Edit Profile</a>
+                <a href="{{ url_for('chat', username=user.username) }}" class="btn red">💬 Chat with Yourself</a>
+                <a href="{{ url_for('dashboard') }}" class="btn green">⬅ Back to Dashboard</a>
+            {% else %}
+                <a href="{{ url_for('chat', username=user.username) }}" class="btn red">💬 Message</a>
+                {% if 'search_results' in session %}
+                    <a href="{{ url_for('browse_results') }}" class="btn green">⬅ Back to Search</a>
+                {% endif %}
             {% endif %}
-        {% endif %}
+        </div>
     </div>
 </body>
 </html>

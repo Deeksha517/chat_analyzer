@@ -1,0 +1,78 @@
+{
+  "builder_name": "empathetic_dialogues",
+  "citation": "@inproceedings{rashkin2019towards,\n  title = {Towards Empathetic Open-domain Conversation Models: a New Benchmark and Dataset},\n  author = {Hannah Rashkin and Eric Michael Smith and Margaret Li and Y-Lan Boureau},\n  booktitle = {ACL},\n  year = {2019},\n}\n",
+  "config_name": "default",
+  "dataset_name": "empathetic_dialogues",
+  "dataset_size": 25017137,
+  "description": "PyTorch original implementation of Towards Empathetic Open-domain Conversation Models: a New Benchmark and Dataset\n",
+  "download_checksums": {
+    "https://dl.fbaipublicfiles.com/parlai/empatheticdialogues/empatheticdialogues.tar.gz": {
+      "num_bytes": 28022709,
+      "checksum": null
+    }
+  },
+  "download_size": 28022709,
+  "features": {
+    "conv_id": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "utterance_idx": {
+      "dtype": "int32",
+      "_type": "Value"
+    },
+    "context": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "prompt": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "speaker_idx": {
+      "dtype": "int32",
+      "_type": "Value"
+    },
+    "utterance": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "selfeval": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "tags": {
+      "dtype": "string",
+      "_type": "Value"
+    }
+  },
+  "homepage": "https://github.com/facebookresearch/EmpatheticDialogues",
+  "license": "",
+  "size_in_bytes": 53039846,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 18954220,
+      "num_examples": 76673,
+      "dataset_name": "empathetic_dialogues"
+    },
+    "validation": {
+      "name": "validation",
+      "num_bytes": 3063921,
+      "num_examples": 12030,
+      "dataset_name": "empathetic_dialogues"
+    },
+    "test": {
+      "name": "test",
+      "num_bytes": 2998996,
+      "num_examples": 10943,
+      "dataset_name": "empathetic_dialogues"
+    }
+  },
+  "version": {
+    "version_str": "0.1.0",
+    "major": 0,
+    "minor": 1,
+    "patch": 0
+  }
+}

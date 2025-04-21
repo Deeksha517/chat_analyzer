@@ -1,93 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Edit Profile</title>
     <style>
         body {
-            background: #000;
-            color: white;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 40px;
-        }
-
-        form {
             background: #111;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        form {
+            max-width: 500px;
+            margin: 30px auto;
             padding: 30px;
-            border-radius: 15px;
-            display: inline-block;
+            background: #1a1a1a;
+            border-radius: 10px;
         }
-
-        .preview-container {
-            width: 200px;
-            height: 200px;
-            resize: both;
-            overflow: hidden;
-            border: 2px dashed #555;
-            border-radius: 20px;
-            margin: 20px auto;
-            background: #222;
-            position: relative;
-        }
-
-        .preview-container img {
+        textarea, select, input[type="text"], input[type="file"] {
             width: 100%;
-            height: 100%;
-            object-fit: cover;
-            pointer-events: none;
-        }
-
-        input[type="file"] {
-            margin: 10px auto;
-            display: block;
-        }
-
-        textarea, input[type="text"] {
-            width: 90%;
-            padding: 8px;
-            margin: 10px auto;
-            border-radius: 6px;
-            border: 1px solid #444;
-            background: #222;
-            color: white;
-        }
-
-        button {
-            margin-top: 15px;
-            padding: 10px 20px;
-            background: #007bff;
-            color: white;
-            border: none;
+            padding: 10px;
             border-radius: 8px;
+            border: none;
+            margin-bottom: 20px;
+            background: #2c2c2c;
+            color: #fff;
+        }
+        .chip {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 5px 5px 0 0;
+            background-color: #333;
+            border-radius: 20px;
+            color: #fff;
             cursor: pointer;
         }
-
-        button:hover {
-            background: #0056b3;
+        .chip:hover {
+            background-color: #444;
+        }
+        .chip.selected {
+            background-color: #007bff;
+        }
+        .chip .remove {
+            margin-left: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .save-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .save-btn:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
-    <h2>Edit Profile</h2>
     <form method="POST" enctype="multipart/form-data">
-        <label>Bio:</label><br>
-        <textarea name="bio" required>{{ user.bio }}</textarea><br>
+        <h2 style="text-align:center;">Edit Profile</h2>
 
-        <label>Interests:</label><br>
-        <input type="text" name="interests" value="{{ user.interests }}" required><br>
+        <label>Bio:</label>
+        <textarea name="bio" rows="3">{{ bio or '' }}</textarea>
 
-        <label>Profile Picture:</label><br>
+        <label>Gender:</label>
+        <select name="gender">
+            <option value="" {% if not gender %}selected{% endif %}>Select Gender</option>
+            <option value="Male" {% if gender == 'Male' %}selected{% endif %}>Male</option>
+            <option value="Female" {% if gender == 'Female' %}selected{% endif %}>Female</option>
+            <option value="Other" {% if gender == 'Other' %}selected{% endif %}>Other</option>
+        </select>
 
-        {% if user.profile_pic and user.profile_pic != "default.jpg" %}
-            <div class="preview-container">
-                <img src="{{ url_for('static', filename='profile_pics/' + user.profile_pic) }}" alt="Profile Preview">
-            </div>
-            <input type="checkbox" name="remove_pic"> Remove Photo<br>
-        {% endif %}
+        <label>Age Group:</label>
+        <select name="age_group">
+            <option value="" {% if not age_group %}selected{% endif %}>Select Age Group</option>
+            <option value="Under 18" {% if age_group == 'Under 18' %}selected{% endif %}>Under 18</option>
+            <option value="18-24" {% if age_group == '18-24' %}selected{% endif %}>18-24</option>
+            <option value="25-34" {% if age_group == '25-34' %}selected{% endif %}>25-34</option>
+            <option value="35-44" {% if age_group == '35-44' %}selected{% endif %}>35-44</option>
+            <option value="45+" {% if age_group == '45+' %}selected{% endif %}>45+</option>
+        </select>
 
-        <input type="file" name="profile_pic"><br>
+        <label>Interests (comma-separated or click to add):</label>
+        <input type="hidden" name="interests" id="interestsInput">
+        <input type="text" id="interestInputBox" placeholder="Type and press Enter to add">
+        <div id="selectedInterests" style="margin-bottom: 15px;"></div>
 
-        <button type="submit">Save Changes</button>
+        <div>
+            {% for interest in ['AI', 'Movies', 'Books', 'Gaming', 'Coding', 'Music', 'Travel'] %}
+                <span class="chip" onclick="addInterest('{{ interest }}')">{{ interest }}</span>
+            {% endfor %}
+        </div>
+
+        <label>Profile Picture:</label>
+        <input type="file" name="profile_pic">
+
+        <button type="submit" class="save-btn">Save Changes</button>
     </form>
+
+    <script>
+        let selectedInterests = [];
+
+        function updateInterestsUI() {
+            const container = document.getElementById("selectedInterests");
+            container.innerHTML = '';
+            selectedInterests.forEach(interest => {
+                const chip = document.createElement('span');
+                chip.className = 'chip selected';
+                chip.innerHTML = `${interest}<span class="remove" onclick="removeInterest('${interest}')">&times;</span>`;
+                container.appendChild(chip);
+            });
+            document.getElementById('interestsInput').value = selectedInterests.join(',');
+        }
+
+        function addInterest(interest) {
+            interest = interest.trim();
+            if (interest && !selectedInterests.includes(interest)) {
+                selectedInterests.push(interest);
+                updateInterestsUI();
+            }
+        }
+
+        function removeInterest(interest) {
+            selectedInterests = selectedInterests.filter(i => i !== interest);
+            updateInterestsUI();
+        }
+
+        document.getElementById("interestInputBox").addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                const input = e.target.value.trim();
+                if (input) {
+                    addInterest(input);
+                    e.target.value = '';
+                }
+            }
+        });
+
+        // Preload existing interests
+        window.onload = function () {
+            const initial = "{{ interests }}".split(',').map(i => i.trim()).filter(i => i);
+            selectedInterests = Array.from(new Set(initial));
+            updateInterestsUI();
+        };
+    </script>
 </body>
 </html>
