@@ -6,6 +6,9 @@ from flask import Flask, request, jsonify, redirect, url_for, session, render_te
 from flask_bcrypt import Bcrypt # type: ignore
 from datetime import datetime, timedelta
 from flask_socketio import SocketIO, join_room, emit
+from urllib.parse import urlparse
+
+
 
 
 # 1. Near the top of app.py, define your inbox‑listing SQL
@@ -378,7 +381,7 @@ def chat(username):
     if 'username' not in session:
         session.pop('username', None)
         return redirect(url_for('login'))
-    
+
     sender = session['username']
     receiver = username
 
@@ -391,8 +394,18 @@ def chat(username):
                           ORDER BY timestamp ASC''', (sender, receiver, receiver, sender))
         messages = cursor.fetchall()
 
-    # Render the chat page with the messages
-    return render_template('chat.html', username=username, messages=messages)
+    # Get the previous page (referrer)
+    referrer = request.referrer
+    if referrer:
+        back_url = urlparse(referrer).path
+        # Avoid redirecting back to login or register pages
+        if back_url in ['/login', '/register']:
+            back_url = url_for('dashboard')  # Redirect to the dashboard if coming from login/register
+    else:
+        back_url = url_for('dashboard')  # Fallback to dashboard if referrer is not available
+
+    # Render the chat page with the messages and back button URL
+    return render_template('chat.html', username=username, messages=messages, back_url=back_url)
 
 # Route to fetch chat history for a specific conversation
 @app.route('/get_chat/<receiver>', methods=['GET'])
