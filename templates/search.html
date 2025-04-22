@@ -6,9 +6,9 @@
         body { font-family: Arial, sans-serif; text-align: center; }
         .container { margin-top: 20px; }
         .search-container { margin-bottom: 20px; position: relative; display: inline-block; }
-        .search-box {
+        .search-box, .filter-input, .filter-select {
             padding: 10px;
-            width: 250px;
+            margin: 5px;
             font-size: 16px;
             border: 1px solid #ccc;
             border-radius: 5px;
@@ -16,7 +16,7 @@
         .search-history {
             display: none;
             position: absolute;
-            top: 40px;
+            top: 45px;
             left: 0;
             width: 100%;
             background: white;
@@ -68,10 +68,10 @@
 
     <h2>Browse Users</h2>
 
-    <!-- 🔍 Search Bar with History -->
-    <form action="{{ url_for('search_friends') }}" method="POST">
+    <!-- 🔍 Search Bar with Filters and History -->
+    <form action="{{ url_for('search_friends') }}" method="GET">
         <div class="search-container">
-            <input type="text" name="query" class="search-box" placeholder="Search username" value="{{ last_search }}" 
+            <input type="text" name="username" class="search-box" placeholder="Search username" value="{{ request.args.get('username', '') }}"
                    onfocus="showHistory()" oninput="showHistory()">
             <div class="search-history" id="search-history">
                 {% for past_search in search_history %}
@@ -79,17 +79,29 @@
                 {% endfor %}
             </div>
         </div>
+
+        <!-- Filters -->
+        <select name="gender" class="filter-select">
+            <option value="">Any Gender</option>
+            <option value="Male" {% if request.args.get('gender') == 'Male' %}selected{% endif %}>Male</option>
+            <option value="Female" {% if request.args.get('gender') == 'Female' %}selected{% endif %}>Female</option>
+            <option value="Prefer not to say" {% if request.args.get('gender') == 'Prefer not to say' %}selected{% endif %}>Prefer not to say</option>
+        </select>
+
+        <!-- Age Group Filters -->
+        <input type="number" name="min_age" class="filter-input" placeholder="Min Age" value="{{ request.args.get('min_age', '') }}" min="1">
+        <input type="number" name="max_age" class="filter-input" placeholder="Max Age" value="{{ request.args.get('max_age', '') }}" min="1">
+
+        <input type="text" name="interest" class="filter-input" placeholder="Interest (e.g., Music)" value="{{ request.args.get('interest', '') }}">
+
         <button type="submit">🔍 Search</button>
     </form>
 
     <div class="container">
         {% if user %}
         <div class="card">
-            <!-- Profile Picture with Fallback -->
             <img src="{{ url_for('static', filename='profile_pics/' + (user['profile_pic'] if user['profile_pic'] else 'default.jpg')) }}" 
                  alt="Profile Picture" class="profile-pic">
-            
-            <!-- Username -->
             <p class="username">👤 {{ user['username'] }}</p>
 
             <div class="buttons">
@@ -98,7 +110,6 @@
             </div>
         </div>
 
-        <!-- Navigation buttons -->
         <div class="buttons">
             {% if session['current_index'] > 0 %}
                 <a href="{{ url_for('prev_user') }}" class="nav-btn">⬅️ Previous</a>
@@ -107,9 +118,9 @@
                 <a href="{{ url_for('next_user') }}" class="nav-btn">Next ➡️</a>
             {% endif %}
         </div>
-        
-        {% elif last_search %}
-            <p>No users found for "{{ last_search }}".</p>
+
+        {% elif request.args.get('username') or request.args.get('interest') or request.args.get('gender') or request.args.get('min_age') or request.args.get('max_age') %}
+            <p>No users found for the selected filters.</p>
         {% endif %}
     </div>
 
@@ -136,7 +147,6 @@
         }
 
         function clearSearch() {
-            // This clears the search box and session storage
             document.querySelector(".search-box").value = "";
         }
 

@@ -1,116 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Browse Users</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        .container { margin-top: 20px; }
-        .card {
-            width: 300px;
-            margin: 20px auto;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            background: white;
-            text-align: center;
-        }
-        .profile-pic {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 10px;
-        }
-        .username { font-size: 20px; font-weight: bold; }
-        .buttons { margin-top: 15px; }
-        .buttons a {
-            display: inline-block;
-            padding: 10px 15px;
-            margin: 5px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .chat-btn { background: #28a745; color: white; }
-        .profile-btn { background: #17a2b8; color: white; }
-        .nav-btn { background: #f0ad4e; color: white; }
-        .dashboard-btn { background: #007bff; color: white; }
-
-        /* Search Bar */
-        form {
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-        input[type="text"] {
-            padding: 10px;
-            width: 200px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            font-size: 16px;
-        }
-
-        /* Always Same Search Button */
-        .search-btn {
-            padding: 10px 15px;
-            background: #007bff; /* Blue */
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 120px;
-            margin-left: 10px;
-            display: inline-block;
-        }
-
-    </style>
+  <meta charset="UTF-8">
+  <title>Browse Users</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #f7f7f7; }
+    form { margin: 20px auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+    input, select, button {
+      padding: 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 5px;
+    }
+    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    .container { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px,1fr)); gap: 20px; padding: 20px; }
+    .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .card img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+    .username { font-weight: bold; margin: 10px 0 5px; }
+    .chip { display: inline-block; padding: 4px 8px; margin: 2px; background: #e0e0e0; border-radius: 12px; font-size: 12px; }
+    .dashboard-link {
+      display: inline-block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
 
-    <h2>Browse Users</h2>
+  <h2>Browse Users</h2>
 
-    <!-- Search Bar -->
-    <div class="search-btn-container">
-        <form action="{{ url_for('search_friends') }}" method="GET">
-            <input type="text" name="query" placeholder="Search username" value="{{ last_search }}" required>
-            <button type="submit" class="search-btn">🔍 Search</button>
-        </form>
-    </div>
+  <form action="{{ url_for('search_friends') }}" method="GET">
+    <input type="text"    name="username"  placeholder="Username"   value="{{ filters.username }}">
+    <select name="gender">
+      <option value="">Any Gender</option>
+      <option value="Male"   {% if filters.gender=='Male'   %}selected{% endif %}>Male</option>
+      <option value="Female" {% if filters.gender=='Female' %}selected{% endif %}>Female</option>
+      <option value="Other"  {% if filters.gender=='Other'  %}selected{% endif %}>Other</option>
+    </select>
+    <select name="age_group">
+      <option value="">Any Age Group</option>
+      <option value="Under 18" {% if filters.age_group=='Under 18' %}selected{% endif %}>Under 18</option>
+      <option value="18-24"    {% if filters.age_group=='18-24'    %}selected{% endif %}>18–24</option>
+      <option value="25-34"    {% if filters.age_group=='25-34'    %}selected{% endif %}>25–34</option>
+      <option value="35-44"    {% if filters.age_group=='35-44'    %}selected{% endif %}>35–44</option>
+      <option value="45+"      {% if filters.age_group=='45+'      %}selected{% endif %}>45+</option>
+    </select>
+    <input type="text" name="interest" placeholder="Interest" value="{{ filters.interest }}">
+    <button type="submit">🔍 Search</button>
+  </form>
 
+  {% if not has_filters %}
+    <p style="color: #666;">Enter one or more filters above to find users.</p>
+  {% elif users %}
     <div class="container">
-        {% if user %}
+      {% for u in users %}
         <div class="card">
-            <img src="{{ url_for('static', filename='profile_pics/' + user['profile_pic']) }}" 
-                 alt="Profile Picture" class="profile-pic">
-            <p class="username">👤 {{ user['username'] }}</p>
-
-            <div class="buttons">
-                <a href="{{ url_for('chat', username=user['username']) }}" class="chat-btn">💬 Chat Now</a>
-                <a href="{{ url_for('view_profile', username=user['username']) }}" class="profile-btn">👀 View Profile</a>
-            </div>
+          <img src="{{ url_for('static', filename='profile_pics/' ~ (u['profile_pic'] or 'default.jpg')) }}" alt="pic">
+          <div class="username">{{ u['username'] }}</div>
+          <div>{{ u['bio'] }}</div>
+          <div>Gender: {{ u['gender'] or '—' }}</div>
+          <div>Age Group: {{ u['age_group'] or '—' }}</div>
+          <div>
+            {% for i in u['interests'].split(',') if i.strip() %}
+              <span class="chip">{{ i.strip() }}</span>
+            {% endfor %}
+          </div>
         </div>
-        {% else %}
-            <p>No users found.</p>
-        {% endif %}
-
-        {% set search_results = session.get('search_results', []) %}
-        {% set current_index = session.get('current_index', 0) %}
-
-        {% if search_results|length > 1 %}
-            <div class="buttons">
-                {% if current_index > 0 %}
-                    <a href="{{ url_for('prev_user') }}" class="nav-btn">⬅️ Previous</a>
-                {% endif %}
-                
-                {% if current_index < search_results|length - 1 %}
-                    <a href="{{ url_for('next_user') }}" class="nav-btn">Next ➡️</a>
-                {% endif %}
-            </div>
-        {% endif %}
-
-        <a href="{{ url_for('dashboard') }}" class="dashboard-btn">🏠 Back to Dashboard</a>
-
+      {% endfor %}
     </div>
+  {% else %}
+    <p>No users match those filters.</p>
+  {% endif %}
+
+  <!-- 🏠 Back to Dashboard -->
+  <a href="{{ url_for('dashboard') }}" class="dashboard-link">🏠 Back to Dashboard</a>
 
 </body>
 </html>

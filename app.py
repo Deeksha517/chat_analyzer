@@ -217,6 +217,8 @@ def edit_profile():
 
     if request.method == 'POST':
         bio = request.form['bio']
+        gender = request.form['gender']  # Capture gender
+        age_group = request.form['age_group']  # Capture age group
         interests = request.form['interests']
         profile_pic = request.files.get('profile_pic')
         remove_pic = request.form.get('remove_pic')  # Check if user wants to remove photo
@@ -243,11 +245,11 @@ def edit_profile():
         else:
             pic_filename = current_pic  # Keep the existing picture
 
-        # Update the database
+        # Update the database with gender and age group
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("UPDATE users SET bio=?, interests=?, profile_pic=? WHERE username=?",
-                           (bio, interests, pic_filename, username))
+            cursor.execute("UPDATE users SET bio=?, gender=?, age_group=?, interests=?, profile_pic=? WHERE username=?",
+                           (bio, gender, age_group, interests, pic_filename, username))
             conn.commit()
 
         return redirect(url_for('view_profile', username=username))
@@ -255,53 +257,58 @@ def edit_profile():
     # Fetch user data for pre-filling the form
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT bio, interests, profile_pic FROM users WHERE username=?", (username,))
+        cursor.execute("SELECT bio, gender, age_group, interests, profile_pic FROM users WHERE username=?", (username,))
         user = cursor.fetchone()
 
     return render_template('edit_profile.html', user={
         "bio": user[0],
-        "interests": user[1],
-        "profile_pic": user[2]
+        "gender": user[1],
+        "age_group": user[2],
+        "interests": user[3],
+        "profile_pic": user[4]
     })
 
-@app.route('/search_friends', methods=['GET', 'POST'])
+    
+
+@app.route('/search_friends', methods=['GET'])
 def search_friends():
-    session.setdefault('search_history', [])  # Ensure search history exists
+    # gather filters
+    username  = request.args.get('username', "").strip()
+    gender    = request.args.get('gender', "")
+    age_group = request.args.get('age_group', "")
+    interest  = request.args.get('interest', "").strip()
 
-    last_search = ""
+    filters = {'username': username, 'gender': gender, 'age_group': age_group, 'interest': interest}
     users = []
+    has_filters = any(filters.values())
 
-    # 🚀 Clear search results ONLY if coming from Dashboard (fresh GET request without results)
-    if request.method == 'GET' and 'clear_results' in session:
-        session.pop('search_results', None)
-        session.pop('current_index', None)
-        session.pop('clear_results', None)  # Remove flag after clearing
-        session.modified = True  # Ensure session updates
+    if has_filters:
+        sql    = "SELECT username, bio, profile_pic, gender, age_group, interests FROM users WHERE 1=1"
+        params = []
 
-    if request.method == 'POST':
-        query = request.form.get('query', "").strip()
-        last_search = query
+        if username:
+            sql    += " AND LOWER(username) LIKE LOWER(?)"
+            params.append(f"%{username}%")
+        if gender:
+            sql    += " AND gender = ?"
+            params.append(gender)
+        if age_group:
+            sql    += " AND age_group = ?"
+            params.append(age_group)
+        if interest:
+            sql    += " AND LOWER(interests) LIKE LOWER(?)"
+            params.append(f"%{interest}%")
 
-        if query and query not in session['search_history']:
-            session['search_history'].insert(0, query)
-            session['search_history'] = session['search_history'][:5]  # Keep last 5 searches
-            session.modified = True  # Mark session as modified
+        db  = get_db()
+        cur = db.execute(sql + " ORDER BY username LIMIT 50", params)
+        users = cur.fetchall()
 
-        with get_db() as conn:
-            conn.row_factory = sqlite3.Row  # Enable dictionary-like access
-            cursor = conn.cursor()
-            cursor.execute("SELECT username, bio, profile_pic FROM users WHERE LOWER(username) LIKE LOWER(?) LIMIT 10", (f"%{query}%",))
-            result = cursor.fetchall()
-            users = [dict(row) for row in result]  # Convert rows to dictionaries
+    return render_template('browse.html',
+                           users=users,
+                           filters=filters,
+                           has_filters=has_filters)
 
-        session['search_results'] = users  # Store search results
-        session['current_index'] = 0  # Reset index
-        session.modified = True  # Mark session as modified
 
-    users = session.get('search_results', [])  # Retrieve safely
-    user = users[session.get('current_index', 0)] if users else None  # Avoid errors
-
-    return render_template('search.html', user=user, last_search=last_search, search_history=session['search_history'])
 
 
 @app.route('/browse_results', methods=['GET'])
@@ -315,30 +322,27 @@ def browse_results():
     index = session.get('current_index', 0)
 
     if not search_results:
-        return render_template('search.html', message="No users found.")  # Redirect to search page with message
+        return render_template('browse.html', user=None, last_search="", search_history=session.get('search_history', []))
 
-    # Get the username of the current user being viewed
     selected_user = search_results[index]
-    
-    # Fetch additional user details (bio, profile_pic, interests) from the database
+
+    # Fetch additional user details for display
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT username, bio, profile_pic, interests FROM users WHERE username = ?", (selected_user['username'],))
         user_data = cursor.fetchone()
 
     if not user_data:
-        return render_template('search.html', message="User not found.")
+        return render_template('browse.html', user=None, last_search="", search_history=session.get('search_history', []))
 
-    # Package the fetched user data into a dictionary
     user = {
         "username": user_data[0],
         "bio": user_data[1],
-        "profile_pic": user_data[2] if user_data[2] else 'default.jpg',  # Handle missing profile_pic
+        "profile_pic": user_data[2] if user_data[2] else 'default.jpg',
         "interests": user_data[3]
     }
 
-    # Pass the user data to the template
-    return render_template('browse.html', user=user, index=index, total=len(search_results))
+    return render_template('browse.html', user=user, last_search="", search_history=session.get('search_history', []))
 
 
 
