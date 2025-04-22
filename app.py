@@ -46,7 +46,7 @@ SESSION_TIMEOUT = timedelta(minutes=30)
 # Initialize bcrypt for password hashing
 bcrypt = Bcrypt(app)
 
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='threading')
 
 # Database connection helper
 def get_db_connection():
@@ -544,4 +544,10 @@ def logout():
     return redirect(url_for('login'))  # Redirect to login after logout
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(
+        app,
+        host='127.0.0.1',
+        port=5001,           # ← different port
+        debug=True,
+        use_reloader=False
+    )
