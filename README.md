@@ -4,8 +4,9 @@ ConvoIQ is a real-time chat web application built to help users connect meaningf
 
 ---
 
-## 📽 Demo Video
-[![Watch the demo](https://img.shields.io/badge/YouTube-Demo%20Video-red?logo=youtube)](https://your-demo-link-here.com)
+## 🔗 GitHub Repository
+
+🔗 [https://github.com/Deeksha517/chat_analyzer](https://github.com/Deeksha517/chat_analyzer)
 
 ---
 
@@ -51,6 +52,7 @@ ConvoIQ is a real-time chat web application built to help users connect meaningf
 ## 📦 Installation
 
 ### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/Deeksha517/chat_analyzer.git
 cd chat_analyzer
