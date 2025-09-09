@@ -345,22 +345,6 @@ def browse_results():
     return render_template('browse.html', user=user, last_search="", search_history=session.get('search_history', []))
 
 
-
-@app.route('/next_user')
-def next_user():
-    if 'search_results' in session and session['current_index'] < len(session['search_results']) - 1:
-        session['current_index'] += 1
-        # Automatically use session info for the redirection
-        return redirect(url_for('browse_results'))
-
-@app.route('/prev_user')
-def prev_user():
-    if 'search_results' in session and session['current_index'] > 0:
-        session['current_index'] -= 1
-        # Automatically use session info for the redirection
-        return redirect(url_for('browse_results'))
-
-
 @app.route('/profile/<username>')
 def view_profile(username):
     conn = get_db()
